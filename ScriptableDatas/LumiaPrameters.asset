@@ -10,20 +10,28 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ad8500d147731d948b96d9c1951d5712, type: 3}
-  m_Name: LumiaMoveData
+  m_Name: LumiaPrameters
   m_EditorClassIdentifier: 
   _charactorName: "\u30EB\u30FC\u30DF\u30A2"
   _maxHp: 0
   _shotSoundEffect: {fileID: 0}
   _speed: 1
-  _waveCount: 0
-  _waves:
-  - _shots:
-    - {fileID: 5812508158430030541, guid: 44848f7cb4d8fea4a98ec7a609bbed51, type: 3}
-  _shotCounts:
-  - _shotCounts: 14000000
-  _movementPaterns: 00000000
-  _isCurve: 0
+  _waveCount: 1
+  _shots:
+  - {fileID: 5812508158430030541, guid: 44848f7cb4d8fea4a98ec7a609bbed51, type: 3}
+  - {fileID: 374051824120171180, guid: bad6ce76b9bcd1241ba827d56bb8a981, type: 3}
+  - {fileID: 2507287863373559445, guid: 23cf00394f273b2438927df7a0be9aaa, type: 3}
+  _movementAndShootingPaterns:
+  - _shots: 010000000300000002000000
+    _shotCounts: 070000000100000001000000
+    _isTargetingPlayer: 010000
+    _isMoveingShootig: 010000
+    _shotPerSeconds: 070000001400000003000000
+    _shotPaterns: 010000000200000003000000
+    _pelletCountInShots: 0a0000001000000014000000
+    _formedAngles: 00000000c4ffffff00000000
+    _isDecelerationPerShoot: 000000
+  _isCurveMoving: 0
   _speedCurve:
     serializedVersion: 2
     m_Curve:
@@ -51,11 +59,6 @@ MonoBehaviour:
   _xLimitOfMoving: 5
   _yLimitOfMoving: 10
   _sprite: {fileID: 0}
-  _shotPerSeconds: 0a000000
-  _initiallyGeneratedShots: 50
-  _verticalOffset: 0
-  _horizontalOffset: -1
-  _shotPaterns: 00000000
-  _shotVelocity: 01000000
-  _pelletCountInShot: 2
-  _formedAngle: 30
+  _initiallyGeneratedShots: 200
+  _curveMoveVerticalOffset: 0
+  _curveMoveHorizontalOffset: 0

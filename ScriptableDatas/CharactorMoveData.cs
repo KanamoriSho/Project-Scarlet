@@ -1,20 +1,66 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[System.Serializable]
-public class ShotsList
-{
-    [Label("ショット")]
-    public GameObject[] _shots;
-}
+#region 二次元配列表示用クラス
 
 [System.Serializable]
-public class ShotCountList
+public class CharactorShootingData
 {
-    [Label("ショット数")]
+    //発射する弾の番号を格納するリスト
+    [Label("弾番号")]
+    public int[] _shots;
+
+    //発射する弾数を格納するリスト
+    [Label("ショット数"), Range(1, 40)]
     public int[] _shotCounts;
+
+    //発射する弾の自機狙いの有無を格納するリスト
+    [Label("自機狙い")]
+    public bool[] _isTargetingPlayer;
+
+    //発射する弾の自機狙いの有無を格納するリスト
+    [Label("撃ちながら動くか")]
+    public bool[] _isMoveingShootig;
+
+    [Label("秒間発射数"), Range(1, 100)]
+    public int[] _shotPerSeconds = default;
+
+    public enum ShotPatern
+    {
+        [EnumLabel("弾の撃ち方", "単発")]
+        OneShot,
+        [EnumLabel("弾の撃ち方", "一度に")]
+        AllAtOnce,
+        [EnumLabel("弾の撃ち方", "複数発")]
+        MultipleShots,
+        [EnumLabel("弾の撃ち方", "放射状")]
+        RadialShots,
+    }
+
+    [Label("弾の撃ち方"), EnumElements(typeof(ShotPatern))]
+    public List<ShotPatern> _shotPaterns = new List<ShotPatern>();
+
+    [Label("同時生成弾数")]
+    public int[] _pelletCountInShots = default;
+
+    [Label("回転撃ちをする?")]
+    public bool[] _isSwingShots = default;
+
+    [Label("回転撃ち時の散布角")]
+    public int[] _swingShotFormedAngles = default;
+
+    [Label("回転撃ち時の初期角")]
+    public int[] _swingShotFirstAngles = default;
+
+    [Label("同時生成時の右端～左端間の角度")]
+    public int[] _multiShotFormedAngles = default;
+
+    [Label("発射ごとに減速するか")]
+    [Tooltip("true : 同時生成をするごとに減速 連射の際に一発ずつ減速　\n false: 同時生成の際に一発ずつ減速 連射の際は発射ごとの減速はしない")]
+    public bool[] _isDecelerationPerShoot = default;
 }
+
+#endregion
 
 [CreateAssetMenu(menuName = "ScriptableObject/Create CharactorMoveData")]
 public class CharactorMoveData : ScriptableObject
@@ -34,24 +80,13 @@ public class CharactorMoveData : ScriptableObject
     [Label("ウェーブ数")]
     public int _waveCount;
 
-    [Label("ウェーブ")]
-    public ShotsList[] _waves = default;
+    [Label("このキャラが使用する弾")]
+    public List<GameObject> _shots = new List<GameObject>();
 
-    [Label("ウェーブ")]
-    public ShotCountList[] _shotCounts = default;
+    [Label("弾の撃ち方")]
+    public List<CharactorShootingData> _movementAndShootingPaterns = new List<CharactorShootingData>();
 
-    public enum MovementPatern
-    {
-        [EnumLabel("移動の仕方", "移動のみ")]
-        OnlyMove,
-        [EnumLabel("移動の仕方", "撃ちながら")]
-        ShootingWhileMoving,
-    }
-
-    [Label("移動の仕方"), EnumElements(typeof(MovementPatern))]
-    public List<MovementPatern> _movementPaterns = new List<MovementPatern>();
-
-    public bool _isCurve = false;
+    public bool _isCurveMoving = false;
 
     [Label("移動用加速度カーブ")]
     public AnimationCurve _speedCurve = default;
@@ -65,48 +100,12 @@ public class CharactorMoveData : ScriptableObject
     [Label("弾")]
     public Sprite _sprite;
 
-    [Label("秒間発射数"), Range(1, 100)]
-    public int[] _shotPerSeconds = default;
-
     [Label("プール用初期生成弾数")]
     public int _initiallyGeneratedShots = 50;
 
-    [Label("カーブ用縦軸オフセット"), Range(0.0f, 1.0f)]
-    public float _verticalOffset = default;
+    [Label("カーブ弾用縦軸オフセット"), Range(0.0f, 1.0f)]
+    public float _curveMoveVerticalOffset = default;
 
-    [Label("カーブ用横軸オフセット"), Range(-1.0f, 1.0f)]
-    public float _horizontalOffset = default;
-
-    public enum ShotPatern
-    {
-        [EnumLabel("弾の撃ち方", "単発")]
-        OneShot,
-        [EnumLabel("弾の撃ち方", "複数発")]
-        MultipleShots,
-        [EnumLabel("弾の撃ち方", "放射状")]
-        RadialShots,
-    }
-
-    [Label("弾の撃ち方"), EnumElements(typeof(ShotPatern))]
-    public List<ShotPatern> _shotPaterns = new List<ShotPatern>();
-
-    public enum ShotVelocity
-    {
-        [EnumLabel("弾の速度", "等速")]
-        Nomal,
-        [EnumLabel("弾の速度", "徐々に減速")]
-        FastToSlow,
-        [EnumLabel("弾の速度", "徐々に加速")]
-        SlowToFast,
-
-    }
-
-    [Label("弾の撃ち方"), EnumElements(typeof(ShotVelocity))]
-    public List<ShotVelocity> _shotVelocity = new List<ShotVelocity>();
-
-    [HideInInspector]
-    public int _pelletCountInShot = 2;
-
-    [HideInInspector]
-    public int _formedAngle = 30;
+    [Label("カーブ弾用横軸オフセット"), Range(-1.0f, 1.0f)]
+    public float _curveMoveHorizontalOffset = default;
 }

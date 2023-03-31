@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 
@@ -16,6 +14,15 @@ public class ShotMoveData : ScriptableObject
     [Label("回転")]
     public bool _isSpinning = false;
 
+    [Label("色違い")]
+    public bool _hasAlternativeColor = false;
+
+    [Label("2色目スプライト")]
+    public Sprite _alternativeColorSprite = default;
+
+    [Label("当たり判定大きさ"), Range(0.00f, 1.00f)]
+    public float _colliderRadius = 0.05f;
+
     public enum ShooterType
     {
         Player,             //プレイヤー
@@ -26,14 +33,8 @@ public class ShotMoveData : ScriptableObject
     [Label("弾を撃つキャラ")]
     public ShooterType _shooterType;
 
-    [Label("プレイヤー固有の弾か"), HideInInspector]
-    public bool _isPlayersShot = false;
-
-    [Label("ボス固有の弾か"), HideInInspector]
-    public bool _isBossShot = false;
-
-    [Label("弾の速度")]
-    public float _speed = 3;
+    [Label("初速")]
+    public float _initialVelocity = 3;
 
     public enum ShotType
     {
@@ -41,8 +42,6 @@ public class ShotMoveData : ScriptableObject
         Straight,           //直進
         [EnumLabel("弾の種類", "カーブ")]
         Curve,              //カーブ
-        [EnumLabel("弾の種類", "自機狙い")]
-        TargetToPlayer,     //自機狙い
         [EnumLabel("弾の種類", "追尾")]
         Homing,             //追尾
     }
@@ -64,16 +63,32 @@ public class ShotMoveData : ScriptableObject
     public ShotSettings _shotSettings;
 
     [Label("加減速の時間")]
-    public int _timeToSprrdChange = default;
+    public int _timeToSpeedChange = default;
+
+    public enum ShotVelocity
+    {
+        [EnumLabel("弾の初速", "等速")]
+        Nomal,
+        [EnumLabel("弾の初速", "生成ごとに減速")]
+        FastToSlow,
+        [EnumLabel("弾の初速", "生成ごとに加速")]
+        SlowToFast,
+    }
+
+    [EnumElements(typeof(ShotVelocity))]
+    public ShotVelocity _shotVelocity;
+
+    [Label("生成時の加減速具合"), Range(0.1f, 2.0f)]
+    public float _shotVelocityRate = 1.5f;
 
     [Label("加減速カーブ"), HideInInspector]
     public AnimationCurve _speedCurve;          //加減速カーブ
 
     [Label("カーブ用縦軸オフセット"), Range(0.0f, 1.0f), HideInInspector]
-    public float _verticalOffset = default;
+    public float _curveShotVerticalOffset = default;
 
     [Label("カーブ用横軸オフセット"), Range(-1.0f, 1.0f), HideInInspector]
-    public float _horizontalOffset = default;
+    public float _curveShotHorizontalOffset = default;
 
     [Label("デバッグモード")]
     public bool _isDebug = false;

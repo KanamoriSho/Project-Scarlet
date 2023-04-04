@@ -22,6 +22,10 @@ public class CharactorShootingData
     [Label("Œ‚‚¿‚È‚ª‚ç“®‚­‚©")]
     public bool[] _isMoveingShootig;
 
+    //”­Ë‚·‚é’e‚Ì©‹@‘_‚¢‚Ì—L–³‚ğŠi”[‚·‚éƒŠƒXƒg
+    [Label("Ÿ‚Ì’e‚Æ“¯‚ÉŒ‚‚Â‚©")]
+    public bool[] _isShotInSameTime;
+
     [Label("•bŠÔ”­Ë”"), Range(1, 100)]
     public int[] _shotPerSeconds = default;
 

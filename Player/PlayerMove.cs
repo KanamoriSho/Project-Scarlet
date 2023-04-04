@@ -26,9 +26,13 @@ public class PlayerMove : MonoBehaviour
 
     private WaitForSeconds _disableEnemyShotsInterval = default;    //ボム使用から弾が消えるまでのインターバル
 
+    private WaitForSeconds _bombInterval = default;    //ボム使用から弾が消えるまでのインターバル
+
     private bool _isShotInterval = false;                           //射撃インターバル中判定フラグ
 
     private bool _isInvincible = false;                             //無敵フラグ
+
+    private bool _isBombCoolTime = false;                           //ボム使用後クールタイム判定フラグ
 
     private Transform _playerTransform = default;                   //プレイヤーのTransform格納用
 
@@ -80,8 +84,6 @@ public class PlayerMove : MonoBehaviour
 
     #endregion
 
-
-
     private const float SECOND = 1.0f;                          //一秒の定数
 
     private const float BOMB_SHOT_DISABLE_TIME = 0.1f;
@@ -122,8 +124,9 @@ public class PlayerMove : MonoBehaviour
         //無敵時間をキャッシュ
         _invincibleTime = new WaitForSeconds(_playerMoveData._afterHitInvincibleTime);
 
-
         _disableEnemyShotsInterval = new WaitForSeconds(BOMB_SHOT_DISABLE_TIME);
+
+        _bombInterval = new WaitForSeconds(_playerMoveData._bombCoolTime);
 
         /*弾をプールに生成する
          * _charactorMoveData._waves                   : ウェーブ数(ボスキャラ以外は1)
@@ -482,13 +485,18 @@ public class PlayerMove : MonoBehaviour
     /// <returns></returns>
     IEnumerator Bomb()
     {
+        if(_isBombCoolTime)
+        {
+            yield break;
+        }
+
         _bombShockWave.SetActive(true);                                     //ボムエフェクトを有効化
 
         _bombShockWave.transform.position = _playerTransform.position;      //ボムエフェクトをプレイヤーの座標に移動
 
-        _bombAnimator.SetTrigger("Enable");                                 //Animatorの起動トリガーをオンに
+        _bombAnimator.SetTrigger("Enable");                                 //ボムエフェクトAnimatorの起動トリガーをオンに
 
-        yield return _disableEnemyShotsInterval;                            //ボム発動から敵の弾が消えるまでのインターバル
+        yield return _disableEnemyShotsInterval;                            //ボム発動から敵の弾が消えるまでのインターバル待機
 
         GameObject[] enemyShotsInPicture = GameObject.FindGameObjectsWithTag("EnemyShot");      //現在有効化されている敵の弾を全て取得
 
@@ -497,6 +505,17 @@ public class PlayerMove : MonoBehaviour
         {
             enemyShotsInPicture[shotCount].GetComponent<Animator>().SetTrigger("Disable");      //Animatorの「無効化」トリガーをオンに
         }
+
+        StartCoroutine(BombCoolTime());
+    }
+
+    IEnumerator BombCoolTime()
+    {
+        _isBombCoolTime = true;
+
+        yield return _bombInterval;
+
+        _isBombCoolTime = false;
     }
 
     /// <summary>

@@ -65,9 +65,6 @@ public class CollisionManager : MonoBehaviour
             sortedByDistance = new Transform[0];
         }
 
-
-        Debug.Log(_isHit);
-
     }
 
     /// <summary>

@@ -18,14 +18,17 @@ public class EnemyCharactorMove : MonoBehaviour
     [SerializeField]
     private int _currentShotCount = 0;          //何発その弾を撃ったかを格納する変数
 
+    private int _maxShotCount = 0;              //その弾を何発撃つかを格納する変数
+
+    private int _currentPelletCount = 0;        //発射する弾の現在の生成数を格納する変数
+
+    private int _maxPelletCount = 0;        //発射する弾の同時生成数を格納する変数
+
     public int GetCurrentShotCount
     {
         //_currentPelletCountを返す
         get { return _currentShotCount; }
     }
-
-    [SerializeField]
-    private int _maxShotCount = 0;              //その弾を何発撃つかを格納する変数
 
     public int GetMaxShotCount
     {
@@ -33,15 +36,11 @@ public class EnemyCharactorMove : MonoBehaviour
         get { return _maxShotCount; }
     }
 
-    private int _currentPelletCount = 0;        //
-
     public int GetCurrentPelletCount
     {
         //_currentPelletCountを返す
         get { return _currentPelletCount; }
     }
-
-    private int _maxPelletCount = 0;        //
 
     public int GetMaxPelletCount
     {
@@ -51,6 +50,7 @@ public class EnemyCharactorMove : MonoBehaviour
 
     public bool GetIsDecelerationPerShoot
     {
+        //CharactorMoveDataの発射ごとに初速を加減速させるかのフラグを返す(ShotMoveに受け渡す)
         get { return _charactorMoveData._movementAndShootingPaterns[_waveCount]._isDecelerationPerShoot[_currentShotNumber]; }
     }
 
@@ -61,11 +61,11 @@ public class EnemyCharactorMove : MonoBehaviour
 
     private float _multiShotOffsetAngle = default;      //複数方向に発射する場合の発射角を格納する変数
 
-    private float _swingShotOffsetAngle = default;    //回転撃ちをする際の加算角を格納する変数
+    private float _swingShotOffsetAngle = default;      //回転撃ちをする際の加算角を格納する変数
 
-    private int _checkpointCounter = 0;     //現在の移動チェックポイントの番号を格納する
+    private int _checkpointCounter = 0;                 //現在の移動チェックポイントの番号を格納する
 
-    private int _nextCheckPointNumber = 0;        //次に向かうチェックポイントの番号を格納する
+    private int _nextCheckPointNumber = 0;              //次に向かうチェックポイントの番号を格納する
 
     [SerializeField, Label("チェックポイント")]
     private List<Vector2> _moveCheckPoints = new List<Vector2>();       //移動用チェックポイントの座標を格納する
@@ -74,7 +74,7 @@ public class EnemyCharactorMove : MonoBehaviour
 
     [SerializeField]
     private List<float> _intervalBetweenMoves = new List<float>();      //移動～移動間待機時間を格納するリスト
-
+    [SerializeField]
     private bool _isMovingInterval = false;
 
     private WaitForSeconds _movingInterval = default;       //移動時のコルーチンのキャッシュ
@@ -84,6 +84,12 @@ public class EnemyCharactorMove : MonoBehaviour
     private float SECOND = 1.0f;                            //一秒の定数
 
     private bool _isShotInterval = false;                   //発射インターバル中判定フラグ
+    [SerializeField]
+    private bool _isIgnoreThisCheckPoint = false;           //そのチェックポイントで発射処理を無視するか
+
+    private bool _isShotInSameTime = false;
+
+    private bool hasArrived = false;
 
     private GameObject _player = default;                   //プレイヤー格納用
 
@@ -91,14 +97,12 @@ public class EnemyCharactorMove : MonoBehaviour
 
     private string PLAYER_TAG = "Player";                   //プレイヤーのタグを格納する定数
 
-    private bool _isReachToShotCounterEnd = false;          //発射した弾数が規定量に達したか
-
     private Animator _animator = default;           //自身のAnimtor格納用
 
     private AudioSource audioSource = default;      //自身のAudioSource格納用
 
 
-    //以下の変数はOnDrowGizmosに受け渡すためにフィールド変数にしてますが、ローカル変数で事足りるのでいずれ消すかも
+    //以下の変数はOnDrowGizmosに受け渡すためにフィールド変数にしてますが、計算自体はローカル変数で事足りるので最終的に消す予定です。
 
     private Vector2 _fixedRelayPoint = default;     //ベジェ曲線の中間点格納用
 
@@ -143,10 +147,9 @@ public class EnemyCharactorMove : MonoBehaviour
         }
     }
 
-    void FixedUpdate()
+    void Update()
     {
         _timer += Time.deltaTime;            //時間を加算
-
 
         //次の移動先チェックポイントが指定できているか
         if (_nextCheckPointNumber != _checkpointCounter + 1 || _nextCheckPointNumber != 0)
@@ -164,47 +167,60 @@ public class EnemyCharactorMove : MonoBehaviour
             }
         }
 
-        //規定数現在撃つ弾を発射したか
-        if (_isReachToShotCounterEnd)
+        //移動中に弾を撃つか否かのフラグを格納
+        bool isShotOnTheMove = _charactorMoveData._movementAndShootingPaterns[_waveCount]._isMoveingShootig[_currentShotNumber];
+
+        int nextShotNumber = _currentShotNumber + 1;
+
+        if(nextShotNumber >= _charactorMoveData._movementAndShootingPaterns[_waveCount]._isMoveingShootig.Length)
         {
-            //した
-
-            StopCoroutine(RateOfShot());        //発射～発射間のコルーチンを終了
-
-            _currentShotCount = 0;              //発射回数を0に初期化
-
-            _isReachToShotCounterEnd = false;   //規定数発射したフラグをfalseに
-
-            _currentShotNumber++;               //発射する弾の配列参照番号を変更
-
-            //配列参照番号が配列の要素数を超えていないか
-            if (_currentShotNumber >= _charactorMoveData._shots.Count)
-            {
-                //超えた
-
-                _currentShotNumber = 0;     //配列参照番号を0に戻す
-            }
+            nextShotNumber = 0;
         }
 
-        //移動中に弾を撃つか否かのフラグを格納
-        bool isShootOnTheMove = _charactorMoveData._movementAndShootingPaterns[_waveCount]._isMoveingShootig[_currentShotNumber];
+        //次の弾が移動中に撃つか否かのフラグを格納
+        bool isNextShotOnTheMove = _charactorMoveData._movementAndShootingPaterns[_waveCount]._isMoveingShootig[nextShotNumber];
 
-      //移動間の待機中なら
+        //現在の座標が次チェックポイントと同じか
+        if ((Vector2)this.transform.position == _moveCheckPoints[_nextCheckPointNumber] && !hasArrived)
+        {
+            hasArrived = true;
+
+            if (isShotOnTheMove != isNextShotOnTheMove)
+            {
+                _isIgnoreThisCheckPoint = true;
+            }
+
+            _movingInterval = new WaitForSeconds(_intervalBetweenMoves[_checkpointCounter]);    //移動間のインターバルをキャッシュ
+
+            _checkpointCounter = _nextCheckPointNumber;     //現在のチェックポイントを書き換え
+
+            StartCoroutine(MovementInterval());             //移動～移動間の待機コルーチン
+
+            SetShotNumber();
+        }
+
+        //移動間の待機中なら
         if (_isMovingInterval)
         {
+            if(_isIgnoreThisCheckPoint)
+            {
+                return;
+            }
+
             //移動中に撃つフラグがfalse?
-            if (!isShootOnTheMove)
+            if (!isShotOnTheMove)
             {
                 //falseだった
 
                 SettingShotPrameters();     //弾に受け渡すパラメータの設定・発射
+
             }
 
             return;
         }
 
         //移動中に撃つフラグがtrue?
-        if (isShootOnTheMove)
+        if (isShotOnTheMove)
         {
             //trueだった
 
@@ -220,7 +236,10 @@ public class EnemyCharactorMove : MonoBehaviour
 
             Vector2 nextPosition = _moveCheckPoints[_nextCheckPointNumber];         //移動先の目標座標
 
-            float movingSpeed = _charactorMoveData._speed * _charactorMoveData._speedCurve.Evaluate(_timer);     //移動速度 * 経過時間
+            /* 移動速度の計算
+             * 移動速度 * 移動速度用アニメーションカーブの値
+             */
+            float movingSpeed = _charactorMoveData._speed * _charactorMoveData._speedCurve.Evaluate(_timer);
 
             /* Lerpでチェックポイント間を移動
              * 編隊移動用オフセット値を加算する(単体飛行の場合は+-0)
@@ -238,17 +257,27 @@ public class EnemyCharactorMove : MonoBehaviour
 
             this.transform.position = CalcuateBezierCurve() + _movingOffset;
         }
+    }
 
-        //現在の座標が次チェックポイントと同じか
-        if ((Vector2)this.transform.position == _moveCheckPoints[_nextCheckPointNumber])
+    /// <summary>
+    /// <para>SetShotNumber</para>
+    /// <para>発射する弾の弾番号の変更、発射数の初期化を行う</para>
+    /// </summary>
+    private void SetShotNumber()
+    {
+        StopCoroutine(RateOfShot());        //発射～発射間のコルーチンを終了
+
+        _currentShotCount = 0;              //発射回数を0に初期化
+
+        _currentShotNumber++;               //発射する弾の配列参照番号を変更
+
+        //配列参照番号が配列の要素数を超えていないか
+        if (_currentShotNumber >= _charactorMoveData._movementAndShootingPaterns[_waveCount]._shots.Length)
         {
-            _movingInterval = new WaitForSeconds(_intervalBetweenMoves[_checkpointCounter]);           //移動間のインターバルをキャッシュ
+            //超えた
 
-            StartCoroutine(MovementInterval());             //移動～移動間の待機コルーチン
-
-            _checkpointCounter = _nextCheckPointNumber;     //現在のチェックポイントを書き換え
+            _currentShotNumber = 0;     //配列参照番号を0に戻す
         }
-
     }
 
     /// <summary>
@@ -258,12 +287,15 @@ public class EnemyCharactorMove : MonoBehaviour
     /// <returns>_interval : インターバル時間</returns>
     IEnumerator MovementInterval()
     {
-
         _isMovingInterval = true;       //移動待機中フラグtrue
 
         yield return _movingInterval;   //待機時間分待機
 
         _isMovingInterval = false;      //移動待機中フラグfalse
+
+        _isIgnoreThisCheckPoint = false;
+
+        hasArrived = false;
 
         _timer = 0;                     //時間計測用タイマリセット
     }
@@ -281,7 +313,12 @@ public class EnemyCharactorMove : MonoBehaviour
 
         _relayPointVector = currentMoveCheckpoint - nextMoveCheckpoint;         //現在地 - 次チェックポイント間のベクトルを算出
 
-        //ベクトル上のオフセットした中間点を算出
+
+        /*ベクトル上の0.0～1.0でオフセットした中間点を算出
+         * 0.0 : 発射地点
+         * 0.5 : 発射地点とターゲットの中間
+         * 1.0 : ターゲットの座標
+         */
         _relayPointY = Vector2.Lerp(currentMoveCheckpoint, nextMoveCheckpoint, _charactorMoveData._curveMoveVerticalOffset);
 
         /*弾軌道の左右値に応じて計算するベクトルの向きを変更する
@@ -292,13 +329,21 @@ public class EnemyCharactorMove : MonoBehaviour
          * _relayPointYで求めたベクトル上の中間地点をもとに垂直ベクトルを出す
          */
 
-        if (_charactorMoveData._curveMoveHorizontalOffset <= 0)
+        float horizontalAxisOffset = _charactorMoveData._curveMoveHorizontalOffset;      //ベクトルに対する横軸オフセット値を設定
+
+        if (horizontalAxisOffset <= 0)
         {
-            _fixedRelayPoint = new Vector2(-_relayPointVector.y, _relayPointVector.x) * _charactorMoveData._curveMoveHorizontalOffset + _relayPointY;
+            //発射地点～ターゲット間ベクトルに対する左向きに垂直なベクトルを求める
+            Vector2 leftPointingVector = new Vector2(-_relayPointVector.y, _relayPointVector.x);
+
+            _fixedRelayPoint = _relayPointY + leftPointingVector * Mathf.Abs(horizontalAxisOffset);
         }
-        else if (_charactorMoveData._curveMoveHorizontalOffset > 0)
+        else if (horizontalAxisOffset > 0)
         {
-            _fixedRelayPoint = new Vector2(_relayPointVector.y, -_relayPointVector.x) * -_charactorMoveData._curveMoveHorizontalOffset + _relayPointY;
+            //発射地点～ターゲット間ベクトルに対する右向きに垂直なベクトルを求める
+            Vector2 rightPointingVector = new Vector2(_relayPointVector.y, -_relayPointVector.x);
+
+            _fixedRelayPoint = _relayPointY + rightPointingVector * Mathf.Abs(horizontalAxisOffset);
         }
 
         Vector2 firstVec = Vector2.Lerp(currentMoveCheckpoint, _fixedRelayPoint, _timer);
@@ -312,8 +357,46 @@ public class EnemyCharactorMove : MonoBehaviour
     }
 
     /// <summary>
+    /// <para>SettingShotPrameters</para>
+    /// <para>発射する弾のパラメータをもとに連射速度や発射数を参照して発射の停止を行う</para>
+    /// </summary>
+    private void SettingShotPrameters()
+    {
+        //弾の最大発射数を格納
+        _maxShotCount = _charactorMoveData._movementAndShootingPaterns[_waveCount]._shotCounts[_currentShotNumber];
+        
+        //現在の発射数が最大発射数を超えていないか
+        if (_currentShotCount <= _maxShotCount)
+        {
+            //越えていない
+
+            //秒間に何発撃つかを格納
+            int shotPerSeconds = _charactorMoveData._movementAndShootingPaterns[_waveCount]._shotPerSeconds[_currentShotNumber] + 1;
+
+            _shotInterval = new WaitForSeconds(SECOND / shotPerSeconds);      //ショット～ショット間の待機時間を設定
+
+            Shot();         //弾発射処理
+        }
+        else
+        {
+            //越えた
+
+            _isShotInSameTime = _charactorMoveData._movementAndShootingPaterns[_waveCount]._isShotInSameTime[_currentShotNumber];
+
+            if (_isShotInSameTime)
+            {
+                _isIgnoreThisCheckPoint = false;
+
+                SetShotNumber();
+
+                SettingShotPrameters();     //弾に受け渡すパラメータの設定・発射
+            }
+        }
+    }
+
+    /// <summary>
     /// <para>Shot</para>
-    /// <para>弾の発射処理</para>
+    /// <para>弾の発射処理。 飛び方、角度等を設定する</para>
     /// </summary>
     private void Shot()
     {
@@ -344,13 +427,17 @@ public class EnemyCharactorMove : MonoBehaviour
             //単位角を算出
             float radian = centralAngle / _maxShotCount;
 
+
+            //初弾か?
             if (_currentShotCount <= 0)
             {
-                _swingShotOffsetAngle = firstAngle;
+                //初弾
+
+                _swingShotOffsetAngle = firstAngle;     //発射角に初弾の角度を設定
             }
             else
             {
-                _swingShotOffsetAngle += radian;
+                _swingShotOffsetAngle += radian;        //発射角に単位角を加算
             }
         }
         else
@@ -360,7 +447,7 @@ public class EnemyCharactorMove : MonoBehaviour
             _swingShotOffsetAngle = 0;  //角度を初期化
         }
 
-        //現在の弾の撃ち方を格納
+        //現在の弾の撃ち方を格納(enum)
         _currentShotPatern = _charactorMoveData._movementAndShootingPaterns[_waveCount]._shotPaterns[_currentShotNumber];
 
         //格納した撃ち方をもとに処理分け
@@ -383,12 +470,12 @@ public class EnemyCharactorMove : MonoBehaviour
                 {
                     _currentPelletCount = pelletCount;
 
-                    EnableShot();                       //弾の有効化 or 生成
+                    EnableShot();               //弾の有効化 or 生成
                 }
 
-                _currentPelletCount = 0;
+                _currentPelletCount = 0;        //同時生成弾数を初期化
 
-                StartCoroutine(RateOfShot());           //インターバル処理
+                StartCoroutine(RateOfShot());   //インターバル処理
 
                 break;
 
@@ -408,8 +495,11 @@ public class EnemyCharactorMove : MonoBehaviour
 
                     float formedAngle = _charactorMoveData._movementAndShootingPaterns[_waveCount]._multiShotFormedAngles[_currentShotNumber];
 
-                    if (pelletCount == 0)       //初弾の場合
+                    //初弾か?
+                    if (pelletCount == 0)
                     {
+                        //初弾
+
                         maxOffset = formedAngle / 2;       //最大発射角を算出
 
                         _multiShotOffsetAngle = -maxOffset;         //最大発射角を代入
@@ -418,7 +508,9 @@ public class EnemyCharactorMove : MonoBehaviour
                     }
                     else
                     {
-                        _multiShotOffsetAngle = _multiShotOffsetAngle + currentAngle;             //最初に設定した発射角に加算
+                        //2発目以降
+
+                        _multiShotOffsetAngle = _multiShotOffsetAngle + currentAngle;   //最初に設定した発射角に加算
                     }
 
                     EnableShot();               //弾の有効化 or 生成
@@ -449,10 +541,10 @@ public class EnemyCharactorMove : MonoBehaviour
                     }
                     else
                     {
-                        _multiShotOffsetAngle = _multiShotOffsetAngle + currentRadialAngle;
+                        _multiShotOffsetAngle = _multiShotOffsetAngle + currentRadialAngle;   //最初に設定した発射角に加算
                     }
 
-                    EnableShot();
+                    EnableShot();               //弾の有効化 or 生成
                 }
 
                 _currentPelletCount = 0;
@@ -466,26 +558,33 @@ public class EnemyCharactorMove : MonoBehaviour
 
     }
 
+    /// <summary>
+    /// <para>EnableShot</para>
+    /// <para>発射する弾に対応したプールを探索し、未使用の弾があればその弾を有効化。無ければ新たにプール内に生成するメソッド</para>
+    /// </summary>
     private void EnableShot()
     {
-
-        foreach (Transform shot in _shotPools[_currentShotNumber].transform)     //オブジェクトプール内に未使用オブジェクトが無いか捜索
+        //オブジェクトプール内に未使用オブジェクトが無いか捜索
+        foreach (Transform shot in _shotPools[_currentShotNumber].transform)
         {
-            if (!shot.gameObject.activeSelf)                //未使用オブジェクトを見つけたら
+            //未使用オブジェクトを見つけたか
+            if (!shot.gameObject.activeSelf)
             {
-                shot.gameObject.SetActive(true);            //trueにする
+                //未使用オブジェクトがあった
+
+                shot.gameObject.SetActive(true);            //見つけた弾を有効化
 
                 CheckShotType(shot);                        //弾種の判定
 
                 shot.position = this.transform.position;    //trueにした弾をプレイヤーの位置に移動
 
-                return;
+                return;     //処理を終了
             }
         }
 
         //以下未使用オブジェクトが無かった場合新しく弾を生成
         
-        //新たに生成する弾の弾番号を取得(弾番号と配列要素数の差を修正するため取得地 -1を格納)
+        //新たに生成する弾の弾番号を取得(弾番号と配列要素数の差を修正するため取得値 -1を格納)
         int shotNumber = _charactorMoveData._movementAndShootingPaterns[_waveCount]._shots[_currentShotNumber] - 1;
 
         //新たに発射する弾のオブジェクトを取得
@@ -502,48 +601,25 @@ public class EnemyCharactorMove : MonoBehaviour
     }
 
     /// <summary>
-    /// <para>SettingShotPrameters</para>
-    /// <para>発射する弾のパラメータをもとに連射速度や発射数を参照して発射の停止を行う</para>
-    /// </summary>
-    private void SettingShotPrameters()
-    {
-        _maxShotCount = _charactorMoveData._movementAndShootingPaterns[_waveCount]._shotCounts[_currentShotNumber];     //弾の最大発射数を格納
-
-        //現在の発射数が最大発射数を超えていないか
-        if (_currentShotCount < _maxShotCount)
-        {
-            //超えていない
-
-            //秒間に何発撃つかを格納
-            int shotPerSeconds = _charactorMoveData._movementAndShootingPaterns[_waveCount]._shotPerSeconds[_currentShotNumber];
-
-            _shotInterval = new WaitForSeconds(SECOND / (shotPerSeconds + 1));      //ショット～ショット間の待機時間を設定
-
-            Shot();         //弾
-        }
-        else
-        {
-            _isReachToShotCounterEnd = true;
-        }
-    }
-
-    /// <summary>
     /// <para>RateOfShot</para>
     /// <para>弾発射のインターバル処理を行う</para>
     /// </summary>
     /// <returns>_shotInterval : インターバル時間</returns>
     IEnumerator RateOfShot()
     {
+        //発射SEがあるか
         if (_charactorMoveData._shotSoundEffect != null)
         {
-            audioSource.PlayOneShot(_charactorMoveData._shotSoundEffect);
+            //ある
+
+            audioSource.PlayOneShot(_charactorMoveData._shotSoundEffect);       //発射SEを再生
         }
 
-        _isShotInterval = true;
+        _isShotInterval = true;         //発射インターバル中フラグをtrueに
 
-        yield return _shotInterval;
+        yield return _shotInterval;     //発射間インターバル処理
 
-        _isShotInterval = false;
+        _isShotInterval = false;        //発射インターバル中フラグをfalseに
 
     }
 
@@ -554,8 +630,11 @@ public class EnemyCharactorMove : MonoBehaviour
     /// <param name="shot">Shotメソッドで有効化/生成された弾。オブジェクトプール探索の際にTransform型で取得するためTransform型</param>
     private void CheckShotType(Transform shot)
     {
+        //自機狙い弾か否かを格納するフラグ
+        bool isTargetingPlayer = _charactorMoveData._movementAndShootingPaterns[_waveCount]._isTargetingPlayer[_currentShotNumber];
+
         //自機狙い弾か
-        if (!_charactorMoveData._movementAndShootingPaterns[_waveCount]._isTargetingPlayer[_currentShotNumber])
+        if (!isTargetingPlayer)
         {
             //通常弾
 
@@ -565,11 +644,17 @@ public class EnemyCharactorMove : MonoBehaviour
         {
             //自機狙い
 
-            //同時生成弾かつその初弾
-            if (_currentPelletCount <= 0)
+            //同時生成弾かつその初弾か
+            if (_currentShotPatern != CharactorShootingData.ShotPatern.OneShot && _currentPelletCount <= 0)
             {
                 _targetingPosition = _player.transform.position;    //ターゲットとしてその瞬間のプレイヤーの座標を格納
+
+                return;
             }
+
+            //同時生成弾ではない場合は常にプレイヤーの座標をターゲット座標として格納する
+
+            _targetingPosition = _player.transform.position;    //ターゲットとしてその瞬間のプレイヤーの座標を格納
         }
 
         /*

@@ -20,17 +20,22 @@ MonoBehaviour:
   _shots:
   - {fileID: 5812508158430030541, guid: 44848f7cb4d8fea4a98ec7a609bbed51, type: 3}
   - {fileID: 374051824120171180, guid: bad6ce76b9bcd1241ba827d56bb8a981, type: 3}
+  - {fileID: 3396101736524438035, guid: 3f2173f1f9f922a4fbbf048e0bf34cef, type: 3}
   - {fileID: 2507287863373559445, guid: 23cf00394f273b2438927df7a0be9aaa, type: 3}
   _movementAndShootingPaterns:
-  - _shots: 010000000300000002000000
-    _shotCounts: 070000000100000001000000
-    _isTargetingPlayer: 010000
-    _isMoveingShootig: 010000
-    _shotPerSeconds: 070000001400000003000000
-    _shotPaterns: 010000000200000003000000
-    _pelletCountInShots: 0a0000001000000014000000
-    _formedAngles: 00000000c4ffffff00000000
-    _isDecelerationPerShoot: 000000
+  - _shots: 01000000040000000200000003000000
+    _shotCounts: 07000000100000000200000002000000
+    _isTargetingPlayer: 01000000
+    _isMoveingShootig: 01010000
+    _isShotInSameTime: 00000100
+    _shotPerSeconds: 09000000320000000300000003000000
+    _shotPaterns: 01000000000000000300000003000000
+    _pelletCountInShots: 0a000000000000001400000014000000
+    _isSwingShots: 00010000
+    _swingShotFormedAngles: 000000005a0000000000000000000000
+    _swingShotFirstAngles: 00000000ecffffff0000000000000000
+    _multiShotFormedAngles: 00000000000000000000000000000000
+    _isDecelerationPerShoot: 00010000
   _isCurveMoving: 0
   _speedCurve:
     serializedVersion: 2

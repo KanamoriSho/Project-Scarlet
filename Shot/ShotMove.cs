@@ -81,7 +81,7 @@ public class ShotMove : MonoBehaviour
 
         _spriteRenderer.sprite = _shotMoveData._shotSprite;             //スプライト変更
 
-        _animator = this.GetComponent<Animator>();
+        _animator = this.GetComponent<Animator>();                      //自身のAnimatorを取得
 
         this._colliderRadius = _shotMoveData._colliderRadius;           //当たり判定のサイズを設定
 
@@ -115,11 +115,37 @@ public class ShotMove : MonoBehaviour
     private void OnEnable()
     {
         Reset();        //初期化処理
+    }
+
+    /// <summary>
+    /// <para>Reset</para>
+    /// <para>変数初期化用メソッド デバッグ時にも呼び出せるようにメソッド化してます</para>
+    /// </summary>
+    private void Reset()
+    {
+        _shooterPosition = _shooter.transform.position;                 //射手の座標を再設定
+
+        this.transform.position = _shooterPosition;                     //自身を射手の座標に移動
+
+        _time = 0;                                                      //経過時間をリセット
+
+        //当たり判定の大きさが_shotMoveDataのものと異なるか
+        if (this._colliderRadius != _shotMoveData._colliderRadius)
+        {
+            //異なる
+
+            this._colliderRadius = _shotMoveData._colliderRadius;       //当たり判定のサイズを再設定
+        }
 
         //弾の回転フラグがtrueか
         if (_shotMoveData._isSpinning)
         {
             this.transform.rotation = Quaternion.Euler(0, 0, Random.Range(0, 360));     //trueならランダムで回転させる
+        }
+
+        if (_shotMoveData._shooterType != ShotMoveData.ShooterType.Player)
+        {
+            _animator.SetTrigger("Enable");
         }
 
         //2色目がある弾か
@@ -132,7 +158,7 @@ public class ShotMove : MonoBehaviour
             Sprite currentShotSprite = default;
 
             //奇遇判定
-            if(_shotCounter % 2 == 1)
+            if (_shotCounter % 2 == 1)
             {
                 //奇数なら
 
@@ -196,27 +222,6 @@ public class ShotMove : MonoBehaviour
 
                 _maxShotCount = _playerMove.GetMaxShotCount;         //_playerMoveから最大発射弾数を受け取る
             }
-        }
-    }
-
-    /// <summary>
-    /// <para>Reset</para>
-    /// <para>変数初期化用メソッド デバッグ時にも呼び出せるようにメソッド化してます</para>
-    /// </summary>
-    private void Reset()
-    {
-        _shooterPosition = _shooter.transform.position;                 //射手の座標を再設定
-
-        this.transform.position = _shooterPosition;                     //自身を射手の座標に移動
-
-        _time = 0;                                                      //経過時間をリセット
-
-        //当たり判定の大きさが_shotMoveDataのものと異なるか
-        if (this._colliderRadius != _shotMoveData._colliderRadius)
-        {
-            //異なる
-
-            this._colliderRadius = _shotMoveData._colliderRadius;       //当たり判定のサイズを再設定
         }
     }
 
@@ -435,7 +440,7 @@ public class ShotMove : MonoBehaviour
         float horizontalAxisOffset = _shotMoveData._curveShotHorizontalOffset;      //ベクトルに対する横軸オフセット値を設定
 
         //左向き
-        if (_shotMoveData._curveShotHorizontalOffset <= 0)
+        if (horizontalAxisOffset <= 0)
         {
             //発射地点～ターゲット間ベクトルに対する左向きに垂直なベクトルを求める
             Vector2 leftPointingVector = new Vector2(-_relayPointVector.y, _relayPointVector.x);
@@ -444,7 +449,7 @@ public class ShotMove : MonoBehaviour
             _fixedRelayPoint = _relayPointY + leftPointingVector * Mathf.Abs(horizontalAxisOffset);
         }
         //右向き
-        else if (_shotMoveData._curveShotHorizontalOffset > 0)
+        else if (horizontalAxisOffset > 0)
         {
             //発射地点～ターゲット間ベクトルに対する右向きに垂直なベクトルを求める
             Vector2 rightPointingVector = new Vector2(_relayPointVector.y, -_relayPointVector.x);

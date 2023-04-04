@@ -36,6 +36,9 @@ public class PlayerMoveData : ScriptableObject
     [Label("被弾後無敵時間")]
     public float _afterHitInvincibleTime = 5.0f;
 
+    [Label("ボムのクールタイム")]
+    public float _bombCoolTime = 5.0f;
+
     [Label("横の移動範囲")]
     public float _xLimitOfMoving = 5.0f;
 

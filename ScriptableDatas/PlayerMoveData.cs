@@ -65,7 +65,7 @@ public class PlayerMoveData : ScriptableObject
         [EnumLabel("弾の撃ち方", "単発")]
         OneShot,
         [EnumLabel("弾の撃ち方", "一度に")]
-        AllAtOnece,
+        AllAtOnce,
         [EnumLabel("弾の撃ち方", "複数発")]
         MultipleShots,
         [EnumLabel("弾の撃ち方", "放射状")]
@@ -80,6 +80,9 @@ public class PlayerMoveData : ScriptableObject
 
     [Label("発射角")]
     public int[] _formedAngles = default;
+
+    [Label("同時生成時の右端～左端間の角度")]
+    public int[] _multiShotFormedAngles = default;
 
     [Label("発射ごとに減速するか")]
     [Tooltip("true : 同時生成をするごとに減速 連射の際に一発ずつ減速　\n false: 同時生成の際に一発ずつ減速 連射の際は一発ごとの減速はしない")]

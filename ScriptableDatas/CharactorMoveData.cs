@@ -20,7 +20,7 @@ public class CharactorShootingData
 
     //”­ŽË‚·‚é’e‚ÌŽ©‹@‘_‚¢‚Ì—L–³‚ðŠi”[‚·‚éƒŠƒXƒg
     [Label("Œ‚‚¿‚È‚ª‚ç“®‚­‚©")]
-    public bool[] _isMoveingShootig;
+    public bool[] _isMovingShooting;
 
     //”­ŽË‚·‚é’e‚ÌŽ©‹@‘_‚¢‚Ì—L–³‚ðŠi”[‚·‚éƒŠƒXƒg
     [Label("ŽŸ‚Ì’e‚Æ“¯Žž‚ÉŒ‚‚Â‚©")]

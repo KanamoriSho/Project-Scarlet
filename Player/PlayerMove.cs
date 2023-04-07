@@ -6,39 +6,55 @@ public class PlayerMove : MonoBehaviour
     [SerializeField, Label("キャラムーブデータ")]
     private PlayerMoveData _playerMoveData = default;
 
-    private int _currentShotNumber = 0;         //現在の発射する弾の番号を格納する変数
-
     [SerializeField, Label("ショット用プール")]
     private GameObject[] _shotPools = default;
 
     [SerializeField, Label("ボムエフェクトのオブジェクト")]
     private GameObject _bombShockWave = default;
 
-    private Animator _bombAnimator = default;
+    private Transform _playerTransform = default;           //自身のTransform格納用
 
-    private int _currentShotCount = 0;          //何回その弾を撃ったかを格納する変数
+    private Animator _animator = default;                   //自身のAnimtor格納用
 
-    private float _offsetAngle = default;   //複数方向に発射する場合の発射角を格納する変数
+    private AudioSource _audioSource = default;             //自身のAudioSource格納用
 
-    private WaitForSeconds _shotInterval = default;                 //弾の連射速度を管理するコルーチンのキャッシュ
+    private CollisionManager _collisionManger = default;    //自身のCollisionManager格納用
 
-    private WaitForSeconds _invincibleTime = default;               //無敵時間を管理するコルーチンのキャッシュ
+    private Animator _bombAnimator = default;               //ボムエフェクトのAnimator格納用
 
-    private WaitForSeconds _disableEnemyShotsInterval = default;    //ボム使用から弾が消えるまでのインターバル
+    private int _currentShotNumber = 0;                     //現在の発射する弾の番号を格納する変数
 
-    private WaitForSeconds _bombInterval = default;    //ボム使用から弾が消えるまでのインターバル
+    private int _currentShotCount = 0;                      //何回その弾を撃ったかを格納する変数
 
-    private bool _isShotInterval = false;                           //射撃インターバル中判定フラグ
+    private int _maxShotCount = 0;                          //その弾を何発撃つかを格納する変数
 
-    private bool _isInvincible = false;                             //無敵フラグ
+    private int _currentPelletCount = 0;                    //発射する弾の現在の生成数を格納する変数
 
-    private bool _isBombCoolTime = false;                           //ボム使用後クールタイム判定フラグ
+    private int _maxPelletCount = 0;                        //発射する弾の同時生成数を格納する変数
 
-    private Transform _playerTransform = default;                   //プレイヤーのTransform格納用
+    private float _multiShotOffsetAngle = default;          //複数方向に発射する場合の発射角を格納する変数
+
+    private float _offsetAngle = default;                   //複数方向に発射する場合の発射角を格納する変数
+
+    private bool _isShotInterval = false;                   //射撃インターバル中判定フラグ
+
+    PlayerMoveData.ShotPatern _currentShotPatern = default; //弾の撃ち方を格納するEnum
+
+    private bool _isInvincible = false;                     //無敵フラグ
+
+    private bool _isBombCoolTime = false;                   //ボム使用後クールタイム判定フラグ
 
     private Vector2 _startPosition = new Vector2(0, -3);            //初期座標
 
     private Vector2 _targetingPosition = default;                   //狙っている座標格納用(発射角計算用)
+
+    private WaitForSeconds _shotInterval = default;                 //弾の連射速度を管理するコルーチンのインターバル
+
+    private WaitForSeconds _invincibleTime = default;               //無敵時間を管理するコルーチンのインターバル
+
+    private WaitForSeconds _disableEnemyShotsInterval = default;    //ボム使用から弾が消えるまでのインターバル
+
+    private WaitForSeconds _bombInterval = default;                 //ボム使用から弾が消えるまでのインターバル
 
     #region Getter Setter
 
@@ -48,23 +64,17 @@ public class PlayerMove : MonoBehaviour
         get { return _currentShotCount; }
     }
 
-    private int _maxShotCount = 0;              //その弾を何発撃つかを格納する変数
-
     public int GetMaxShotCount
     {
         //_maxShotCountを返す
         get { return _maxShotCount; }
     }
 
-    private int _currentPelletCount = 0;        //
-
     public int GetCurrentPelletCount
     {
         //_currentPelletCountを返す
         get { return _currentPelletCount; }
     }
-
-    private int _maxPelletCount = 0;        //
 
     public int GetMaxPelletCount
     {
@@ -84,38 +94,39 @@ public class PlayerMove : MonoBehaviour
 
     #endregion
 
-    private const float SECOND = 1.0f;                          //一秒の定数
+    private const float SECOND = 1.0f;                              //一秒の定数
 
-    private const float BOMB_SHOT_DISABLE_TIME = 0.1f;
+    private const float BOMB_SHOT_DISABLE_TIME = 0.1f;              //ボムが敵弾を無効化するまでの時間
 
-    private const float SLOW_MOVING_RATE = 0.5f;
+    private const float SLOW_MOVING_RATE = 0.5f;                    //スロー移動時の減速率
 
-    private const string ANIMATION_BOOL_LEFT_MOVE = "LeftMoving";
+    private const string ANIMATION_BOOL_LEFT_MOVE = "LeftMoving";   //左移動のAnimatorのBool名
 
-    private const string ANIMATION_BOOL_RIGHT_MOVE = "RightMoving";
+    private const string ANIMATION_BOOL_RIGHT_MOVE = "RightMoving"; //右移動のAnimatorのBool名
 
-    private const string ANIMATION_BOOL_SIDE_MOVING = "SideMoving";
-
-    private Animator _animator = default;                   //自身のAnimtor格納用
-
-    private AudioSource _audioSource = default;             //自身のAudioSource格納用
-
-    private CollisionManager _collisionManger = default;    //自身のCollisionManager格納用
+    private const string ANIMATION_BOOL_SIDE_MOVING = "SideMoving"; //横移動のAnimatorのBool名
 
     private void Awake()
     {
-        _animator = this.GetComponent<Animator>();                          //Animatorの取得
+        //自身のAnimatorの取得
+        _animator = this.GetComponent<Animator>();
 
-        _playerTransform = this.transform;                                  //自身のTransformを取得
+        //自身のTransformを取得
+        _playerTransform = this.transform;
 
-        _audioSource = this.GetComponent<AudioSource>();                    //AudioSourceの取得
+        //自身のAudioSourceの取得
+        _audioSource = this.GetComponent<AudioSource>();
 
-        _collisionManger = this.GetComponent<CollisionManager>();           //CollisionManagerコンポーネントの取得
+        //自身のCollisionManagerコンポーネントの取得
+        _collisionManger = this.GetComponent<CollisionManager>();
 
-        _bombShockWave = GameObject.FindGameObjectWithTag("BombEffect");    //ボム用エフェクトオブジェクトの取得
+        //ボム用エフェクトオブジェクトの取得
+        _bombShockWave = GameObject.FindGameObjectWithTag("BombEffect");
 
+        //ボム用エフェクトのAnimatorを取得
         _bombAnimator = _bombShockWave.GetComponent<Animator>();
 
+        //ボム用エフェクトを無効化
         _bombShockWave.SetActive(false);
 
         //弾発射～発射間の待ち時間をキャッシュ
@@ -124,8 +135,10 @@ public class PlayerMove : MonoBehaviour
         //無敵時間をキャッシュ
         _invincibleTime = new WaitForSeconds(_playerMoveData._afterHitInvincibleTime);
 
+        //敵弾無効化待機時間のキャッシュ
         _disableEnemyShotsInterval = new WaitForSeconds(BOMB_SHOT_DISABLE_TIME);
 
+        //ボムの使用インターバルのキャッシュ
         _bombInterval = new WaitForSeconds(_playerMoveData._bombCoolTime);
 
         /*弾をプールに生成する
@@ -139,63 +152,82 @@ public class PlayerMove : MonoBehaviour
             //使用される弾を生成するループ
             for (int shotCounter = 0; shotCounter < _playerMoveData._initiallyGeneratedShots; shotCounter++)
             {
-                GameObject newShot = Instantiate(_playerMoveData._shots[shotNumber], _shotPools[shotNumber].transform);     //弾の生成
+                //弾の生成
+                GameObject newShot = Instantiate(_playerMoveData._shots[shotNumber], _shotPools[shotNumber].transform);
 
-                newShot.SetActive(false);                   //生成した弾をfalseにする
+                //生成した弾をfalseにする
+                newShot.SetActive(false);
             }
         }
     }
 
-    void FixedUpdate()
+    void Update()
     {
-        float movingXInput = default;       //X軸の入力値格納用
-        float movingYInput = default;       //Y軸の入力値格納用
+        //X軸の入力値格納用
+        float movingXInput = default;
+
+        //Y軸の入力値格納用
+        float movingYInput = default;
 
         //_playerMoveData._speed : プレイヤーの移動速度(スクリプタブルオブジェクトから受け取り)
 
         //右入力
         if (Input.GetKey(KeyCode.RightArrow))
         {
-            movingXInput = _playerMoveData._speed;                  //X軸の入力値にプレイヤーの速度を入れる             
+            //X軸の入力値にプレイヤーの速度を入れる      
+            movingXInput = _playerMoveData._speed;
 
-            _animator.SetBool(ANIMATION_BOOL_LEFT_MOVE, false);     //Animatorの「左移動中」boolをfalseに
+            //Animatorの「左移動中」boolをfalseに
+            _animator.SetBool(ANIMATION_BOOL_LEFT_MOVE, false);
 
-            _animator.SetBool(ANIMATION_BOOL_RIGHT_MOVE, true);     //Animatorの「右移動中」boolをtrueに
+            //Animatorの「右移動中」boolをtrueに
+            _animator.SetBool(ANIMATION_BOOL_RIGHT_MOVE, true);
 
-            _animator.SetBool(ANIMATION_BOOL_SIDE_MOVING, true);    //Animatorの「横移動中」boolをtrueに
+            //Animatorの「横移動中」boolをtrueに
+            _animator.SetBool(ANIMATION_BOOL_SIDE_MOVING, true);
         }
         //左入力
         else if (Input.GetKey(KeyCode.LeftArrow))
         {
-            movingXInput = -_playerMoveData._speed;                 //X軸の入力値に(プレイヤーの速度 * -1)を入れる
+            //X軸の入力値に(プレイヤーの速度 * -1)を入れる
+            movingXInput = -_playerMoveData._speed;
 
-            _animator.SetBool(ANIMATION_BOOL_LEFT_MOVE, true);      //Animatorの「左移動中」boolをtrueに
+            //Animatorの「左移動中」boolをtrueに
+            _animator.SetBool(ANIMATION_BOOL_LEFT_MOVE, true);
 
-            _animator.SetBool(ANIMATION_BOOL_RIGHT_MOVE, false);    //Animatorの「左移動中」boolをfalseに
+            //Animatorの「左移動中」boolをfalseに
+            _animator.SetBool(ANIMATION_BOOL_RIGHT_MOVE, false);
 
-            _animator.SetBool(ANIMATION_BOOL_SIDE_MOVING, true);    //Animatorの「横移動中」boolをtrueに
+            //Animatorの「横移動中」boolをtrueに
+            _animator.SetBool(ANIMATION_BOOL_SIDE_MOVING, true);
         }
         //左右入力無し
         else
         {
-            movingXInput = 0;                                       //X軸の入力値を0に
+            //X軸の入力値を0に
+            movingXInput = 0;
 
-            _animator.SetBool(ANIMATION_BOOL_LEFT_MOVE, false);     //Animatorの「左移動中」boolをfalseに
+            //Animatorの「左移動中」boolをfalseに
+            _animator.SetBool(ANIMATION_BOOL_LEFT_MOVE, false);
 
-            _animator.SetBool(ANIMATION_BOOL_RIGHT_MOVE, false);    //Animatorの「左移動中」boolをfalseに
+            //Animatorの「左移動中」boolをfalseに
+            _animator.SetBool(ANIMATION_BOOL_RIGHT_MOVE, false);
 
-            _animator.SetBool(ANIMATION_BOOL_SIDE_MOVING, false);   //Animatorの「横移動中」boolをfalseに
+            //Animatorの「横移動中」boolをfalseに
+            _animator.SetBool(ANIMATION_BOOL_SIDE_MOVING, false);
         }
 
         //上入力
         if (Input.GetKey(KeyCode.UpArrow))
         {
-            movingYInput = _playerMoveData._speed;                  //Y軸の入力値にプレイヤーの速度を入れる   
+            //Y軸の入力値にプレイヤーの速度を入れる   
+            movingYInput = _playerMoveData._speed;
         }
         //下入力
         else if (Input.GetKey(KeyCode.DownArrow))
         {
-            movingYInput = -_playerMoveData._speed;                 //Y軸の入力値に(プレイヤーの速度 * -1)を入れる   
+            //Y軸の入力値に(プレイヤーの速度 * -1)を入れる 
+            movingYInput = -_playerMoveData._speed;
         }
 
         //左シフト入力
@@ -203,17 +235,21 @@ public class PlayerMove : MonoBehaviour
         {
             //低速移動
 
-            movingXInput = movingXInput * SLOW_MOVING_RATE;         //X軸の移動入力値を0.5倍する
+            //X軸の移動入力値を0.5倍する
+            movingXInput = movingXInput * SLOW_MOVING_RATE;
 
-            movingYInput = movingYInput * SLOW_MOVING_RATE;         //Y軸の移動入力値を0.5倍する
+            //Y軸の移動入力値を0.5倍する
+            movingYInput = movingYInput * SLOW_MOVING_RATE;
         }
 
-        Move(movingXInput, movingYInput);       //最終的な移動入力値を移動処理に送る
+        //最終的な移動入力値を移動処理に送る
+        Move(movingXInput, movingYInput);
 
         //Z入力
         if (Input.GetKey(KeyCode.Z))
         {
-            Shot();     //弾発射処理
+            //弾発射処理
+            Shot();
         }
 
         //無敵状態か?
@@ -221,7 +257,8 @@ public class PlayerMove : MonoBehaviour
         {
             //無敵
 
-            return;     //処理終了
+            //処理終了
+            return;
         }
 
         //被弾したか?
@@ -229,143 +266,212 @@ public class PlayerMove : MonoBehaviour
         {
             //した
 
-            StartCoroutine(OnHit());                        //被弾コルーチンを開始
+            //被弾コルーチンを開始
+            StartCoroutine(OnHit());
 
-            _collisionManger.GetSetHitFlag = false;         //CollisionManagerの被弾フラグをfalseに
+            //CollisionManagerの被弾フラグをfalseに
+            _collisionManger.GetSetHitFlag = false;
         }
     }
 
     /// <summary>
     /// <para>Shot</para>
-    /// <para>弾の発射処理</para>
+    /// <para>弾の発射処理。 飛び方、角度等を設定する</para>
     /// </summary>
     private void Shot()
     {
-        if (_isShotInterval)    //インターバル中
+        //インターバル中か
+        if (_isShotInterval)
         {
-            return;     //何もしない
+            //インターバル中
+
+            //何もしない
+            return;
         }
 
-        _offsetAngle = 0;   //発射角の初期化
+        //発射角の初期化
+        _multiShotOffsetAngle = 0;
 
-        switch (_playerMoveData._shotPaterns[_currentShotNumber])           //弾の撃ち方
+        //現在の弾の撃ち方を格納(enum)
+        _currentShotPatern = _playerMoveData._shotPaterns[_currentShotNumber];
+
+        //格納した撃ち方をもとに処理分け
+        switch (_currentShotPatern)           //弾の撃ち方
         {
-            case PlayerMoveData.ShotPatern.OneShot:              //単発発射
+            //単発発射
+            case PlayerMoveData.ShotPatern.OneShot:
 
-                EnableShot();                           //弾の有効化 or 生成
-                StartCoroutine(RateOfShot());           //インターバル処理
+                #region 単発発射
+                //弾の有効化 or 生成
+                EnableShot();
+
+                #endregion
 
                 break;
 
-            case PlayerMoveData.ShotPatern.AllAtOnece:
+            //単方向同時発射
+            case PlayerMoveData.ShotPatern.AllAtOnce:
 
-                _maxPelletCount = _playerMoveData._pelletCountInShots[_currentShotNumber];      //同時生成数を格納
+                #region 同時発射
+                //同時生成弾数を取得
+                _maxPelletCount = _playerMoveData._pelletCountInShots[_currentShotNumber];
 
                 //一度に生成する弾数分回るループ
-                for (int pelletCount = 0; pelletCount <= _playerMoveData._pelletCountInShots[_currentShotNumber]; pelletCount++)
+                for (int pelletCount = 0; pelletCount <= _maxPelletCount; pelletCount++)
                 {
+                    //ループ数を現在の生成弾数として渡す
                     _currentPelletCount = pelletCount;
 
-                    EnableShot();                       //弾の有効化 or 生成
+                    //弾の有効化 or 生成
+                    EnableShot();
                 }
 
-                StartCoroutine(RateOfShot());           //インターバル処理
+                #endregion
 
                 break;
 
+            //扇形同時発射
+            case PlayerMoveData.ShotPatern.MultipleShots:
 
-            case PlayerMoveData.ShotPatern.MultipleShots:        //複数発発射
+                #region 扇形同時発射
 
-                float maxOffset = 0;        //最大発射角
+                //同時生成弾数を取得
+                _maxPelletCount = _playerMoveData._pelletCountInShots[_currentShotNumber];
 
-                float currentAngle = 0;     //現在の発射角
+                //最大発射角
+                float maxOffset = 0;
+
+                //現在の発射角
+                float currentAngle = 0;
+
+                //弾の散布角を取得
+                float formedAngle = _playerMoveData._multiShotFormedAngles[_currentShotNumber];
 
                 //一度に生成する弾数分回るループ
-                for (int pelletCount = 0; pelletCount < _playerMoveData._pelletCountInShots[_currentShotNumber]; pelletCount++)
+                for (int pelletCount = 0; pelletCount < _maxPelletCount; pelletCount++)
                 {
-                    if (pelletCount == 0)       //初弾の場合
+                    //ループ数を現在の生成弾数として渡す
+                    _currentPelletCount = pelletCount;
+
+                    //初弾か?
+                    if (pelletCount == 0)
                     {
-                        maxOffset = _playerMoveData._formedAngles[_currentShotNumber] / 2;       //最大発射角を算出
-                        _offsetAngle = -maxOffset;                             //最大発射角を代入
+                        //初弾
+
+                        //散布角から正面を基準にした最大発射角を算出
+                        maxOffset = formedAngle / 2;
+
+                        //最大発射角を代入
+                        _multiShotOffsetAngle = -maxOffset;
 
                         //弾と弾の間の角度を算出
-                        currentAngle = _playerMoveData._formedAngles[_currentShotNumber] / (_playerMoveData._pelletCountInShots[_currentShotNumber] - 1);
+                        currentAngle = formedAngle / (_maxPelletCount - 1);
                     }
                     else
                     {
-                        _offsetAngle = _offsetAngle + currentAngle; //最初に設定した発射角に加算
+                        //2発目以降
+
+                        //初弾で設定した発射角に加算
+                        _multiShotOffsetAngle = _multiShotOffsetAngle + currentAngle;
                     }
 
-                    EnableShot();                       //弾の有効化 or 生成
+                    //弾の有効化 or 生成
+                    EnableShot();
                 }
 
-                StartCoroutine(RateOfShot());           //インターバル処理
+                #endregion
 
                 break;
 
-            case PlayerMoveData.ShotPatern.RadialShots:      //放射状発射
+            //放射状発射
+            case PlayerMoveData.ShotPatern.RadialShots:
 
-                float currentRadialAngle = 0;       //360 / 弾数の数値(弾～弾間の角度)を格納する
+                #region 放射状発射
 
-                //同時に生成する弾数分ループ
-                for (int pelletCount = 0; pelletCount < _playerMoveData._pelletCountInShots[_currentShotNumber]; pelletCount++)
+                //ショット～ショット間の角度格納用
+                float currentRadialAngle = 0;
+
+                //同時生成弾数を取得
+                _maxPelletCount = _playerMoveData._pelletCountInShots[_currentShotNumber];
+
+                //同時生成弾数分ループ
+                for (int pelletCount = 0; pelletCount < _maxPelletCount; pelletCount++)
                 {
-                    //初弾か?(1ループ目か?)
-                    if (pelletCount == 0)
+                    //ループ数を現在の生成弾数として渡す
+                    _currentPelletCount = pelletCount;
+
+                    if (pelletCount == 0)       //初弾の場合
                     {
-                        _offsetAngle = 0;       //加算用角度を初期化
-                        currentRadialAngle = 360 / (_playerMoveData._pelletCountInShots[_currentShotNumber]);       //一発ごとに加算する角度を算出
+                        //ずらし角の初期化
+                        _multiShotOffsetAngle = 0;
+
+                        //弾と弾の間の角度を算出
+                        currentRadialAngle = 360 / _maxPelletCount;
                     }
                     else
                     {
-                        //ループ二回目以降
-
-                        _offsetAngle = _offsetAngle + currentRadialAngle;       //一発ごとの角度を加算
+                        //最初に設定した発射角に加算
+                        _multiShotOffsetAngle = _multiShotOffsetAngle + currentRadialAngle;
                     }
 
-                    EnableShot();                       //弾の有効化 or 生成
+                    //弾の有効化 or 生成
+                    EnableShot();
                 }
 
-                StartCoroutine(RateOfShot());           //インターバル処理
+                #endregion
 
                 break;
         }
 
-        _currentShotCount++;                    //撃った回数を加算
+        //現在の生成弾数の初期化
+        _currentPelletCount = 0;
+
+        //インターバル処理
+        RateOfShot();
+
+        //撃った弾数を加算
+        _currentShotCount++;
 
     }
 
     /// <summary>
     /// <para>EnableShot</para>
-    /// <para>オブジェクトプールを参照し弾の有効化 or 生成を行う</para>
+    /// <para>発射する弾に対応したプールを探索し、未使用の弾があればその弾を有効化。無ければ新たにプール内に生成する</para>
     /// </summary>
     private void EnableShot()
     {
-
-        foreach (Transform shot in _shotPools[_currentShotNumber].transform)     //オブジェクトプール内に未使用オブジェクトが無いか捜索
+        //オブジェクトプール内に未使用オブジェクトが無いか捜索
+        foreach (Transform shot in _shotPools[_currentShotNumber].transform)
         {
-            if (!shot.gameObject.activeSelf)                //未使用オブジェクトを見つけたら
+            //未使用オブジェクトを見つけたか
+            if (!shot.gameObject.activeSelf)
             {
-                shot.gameObject.SetActive(true);            //trueにする
+                //未使用オブジェクトがあった
 
-                CheckShotType(shot);                        //弾種の判定
+                //見つけた弾を有効化
+                shot.gameObject.SetActive(true);
 
-                shot.position = this.transform.position;    //trueにした弾をプレイヤーの位置に移動
+                //弾種の判定
+                CheckShotType(shot);
 
+                //trueにした弾をプレイヤーの位置に移動
+                shot.position = this.transform.position;
 
+                //処理を終了
                 return;
             }
         }
 
-        //以下未使用オブジェクトが無かった場合
-        //新しく弾を生成
-        GameObject newShot =　Instantiate(_playerMoveData._shots[_currentShotNumber - 1],_shotPools[_currentShotNumber].transform);
+        //以下未使用オブジェクトが無かった場合新しく弾を生成
 
-        CheckShotType(newShot.transform);                           //弾種の判定
+        //取得した弾オブジェクトを対応するプールの子オブジェクトとして生成
+        GameObject newShot = Instantiate(_playerMoveData._shots[_currentShotNumber], _shotPools[_currentShotNumber].transform);
 
-        newShot.transform.position = this.transform.position;       //生成した弾をキャラクターの位置に移動
+        //弾種の判定
+        CheckShotType(newShot.transform);
 
-
+        //生成した弾をキャラクターの位置に移動
+        newShot.transform.position = this.transform.position;
     }
 
     /// <summary>
@@ -404,10 +510,7 @@ public class PlayerMove : MonoBehaviour
         }
         else
         {
-            //if (_currentShotCount <= 0)
-            //{
-            //    _targetingPosition = _player.transform.position;
-            //}
+            //一番近くの敵を取得してターゲットとして取得する処理
         }
 
         Vector2 degree = _targetingPosition - (Vector2)this.transform.position;
@@ -532,11 +635,24 @@ public class PlayerMove : MonoBehaviour
 
         StartCoroutine(Bomb());
 
+        StartCoroutine(Interval(_invincibleTime));
+
         yield return _invincibleTime;
 
         _isInvincible = false;
 
 
+    }
+
+    /// <summary>
+    /// <para>Interval</para>
+    /// <para>インターバル処理用のコルーチン</para>
+    /// </summary>
+    /// <param name="intervalTime">待機時間をキャッシュしたWaitForSeconds</param>
+    /// <returns>intervalTime 指定秒数待機して返す</returns>
+    IEnumerator Interval(WaitForSeconds intervalTime)
+    {
+        yield return intervalTime;
     }
 
     public void PositionReset()

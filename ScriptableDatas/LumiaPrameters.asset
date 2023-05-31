@@ -12,30 +12,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ad8500d147731d948b96d9c1951d5712, type: 3}
   m_Name: LumiaPrameters
   m_EditorClassIdentifier: 
-  _charactorName: "\u30EB\u30FC\u30DF\u30A2"
-  _maxHp: 0
+  _characterName: "\u30EB\u30FC\u30DF\u30A2"
+  _maxHP: 2
+  _maxLife: 2
   _shotSoundEffect: {fileID: 0}
   _speed: 1
+  _afterHitInvincibleTime: 5
   _waveCount: 1
   _shots:
   - {fileID: 5812508158430030541, guid: 44848f7cb4d8fea4a98ec7a609bbed51, type: 3}
   - {fileID: 374051824120171180, guid: bad6ce76b9bcd1241ba827d56bb8a981, type: 3}
   - {fileID: 3396101736524438035, guid: 3f2173f1f9f922a4fbbf048e0bf34cef, type: 3}
   - {fileID: 2507287863373559445, guid: 23cf00394f273b2438927df7a0be9aaa, type: 3}
+  - {fileID: 1717400464628675004, guid: 98e810767fb79aa4cadd3c5e18416faf, type: 3}
   _movementAndShootingPaterns:
-  - _shots: 01000000040000000200000003000000
-    _shotCounts: 07000000100000000200000002000000
-    _isTargetingPlayer: 01000000
-    _isMovingShooting: 01010000
-    _isShotInSameTime: 00000100
-    _shotPerSeconds: 09000000320000000300000003000000
-    _shotPaterns: 01000000000000000300000003000000
-    _pelletCountInShots: 0a000000000000001400000014000000
-    _isSwingShots: 00010000
-    _swingShotFormedAngles: 000000005a0000000000000000000000
-    _swingShotFirstAngles: 00000000ecffffff0000000000000000
-    _multiShotFormedAngles: 00000000000000000000000000000000
-    _isDecelerationPerShoot: 00010000
+  - _shots: 0100000004000000020000000500000003000000
+    _shotCounts: 0600000010000000020000000200000001000000
+    _isTargetingPlayer: 0100000000
+    _isMovingShooting: 0101000000
+    _isShotInSameTime: 0000010101
+    _shotPerSeconds: 09000000320000000c0000000c00000001000000
+    _shotPaterns: 0100000000000000030000000300000003000000
+    _pelletCountInShots: 0a000000000000000c000000100000000c000000
+    _isSwingShots: 0001010000
+    _swingShotFormedAngles: 000000005a000000000000000000000000000000
+    _swingShotFirstAngles: 00000000ecffffff000000000000000000000000
+    _multiShotFormedAngles: 0000000000000000000000000000000000000000
+    _isChangeSpeedPerShoot: 0001000000
   _isCurveMoving: 0
   _speedCurve:
     serializedVersion: 2

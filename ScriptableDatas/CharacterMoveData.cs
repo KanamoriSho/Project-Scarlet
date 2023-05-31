@@ -61,25 +61,31 @@ public class CharactorShootingData
 
     [Label("発射ごとに減速するか")]
     [Tooltip("true : 同時生成をするごとに減速 連射の際に一発ずつ減速　\n false: 同時生成の際に一発ずつ減速 連射の際は発射ごとの減速はしない")]
-    public bool[] _isDecelerationPerShoot = default;
+    public bool[] _isChangeSpeedPerShoot = default;
 }
 
 #endregion
 
 [CreateAssetMenu(menuName = "ScriptableObject/Create CharactorMoveData")]
-public class CharactorMoveData : ScriptableObject
+public class CharacterMoveData : ScriptableObject
 {
     [Label("キャラクター名")]
-    public string _charactorName;
+    public string _characterName;
 
     [Label("HP")]
-    public int _maxHp;
+    public int _maxHP;
+
+    [Label("残機")]
+    public int _maxLife;
 
     [Label("ショット時のSE")]
     public AudioClip _shotSoundEffect = default;
 
     [Label("移動スピード")]
     public int _speed;
+
+    [Label("被弾後無敵時間")]
+    public float _afterHitInvincibleTime = 5.0f;
 
     [Label("ウェーブ数")]
     public int _waveCount;

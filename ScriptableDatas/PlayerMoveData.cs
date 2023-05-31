@@ -5,10 +5,10 @@ using UnityEngine;
 public class PlayerMoveData : ScriptableObject
 {
     [Label("キャラクター名")]
-    public string _charactorName;
+    public string _characterName;
 
     [Label("HP")]
-    public int _maxHp;
+    public int _maxHP;
 
     [Label("ショット時のSE")]
     public AudioClip _shotSoundEffect = default;
@@ -78,13 +78,10 @@ public class PlayerMoveData : ScriptableObject
     [Label("一度に生成する弾数")]
     public int[] _pelletCountInShots = default;
 
-    [Label("発射角")]
-    public int[] _formedAngles = default;
-
     [Label("同時生成時の右端～左端間の角度")]
     public int[] _multiShotFormedAngles = default;
 
     [Label("発射ごとに減速するか")]
     [Tooltip("true : 同時生成をするごとに減速 連射の際に一発ずつ減速　\n false: 同時生成の際に一発ずつ減速 連射の際は一発ごとの減速はしない")]
-    public bool[] _isDecelerationPerShoot = default;
+    public bool[] _isChangeSpeedPerShot = default;
 }

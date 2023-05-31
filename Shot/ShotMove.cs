@@ -9,7 +9,7 @@ public class ShotMove : MonoBehaviour
 
     private Animator _animator = default;                   //©g‚ÌAnimatorŠi”[—p
 
-    private EnemyCharactorMove _charactorMove = default;    //“GƒLƒƒƒ‰ƒNƒ^[‚Ì‹““®ƒXƒNƒŠƒvƒg‚ÌŠi”[—p
+    private EnemyCharacterMove _characterMove = default;    //“GƒLƒƒƒ‰ƒNƒ^[‚Ì‹““®ƒXƒNƒŠƒvƒg‚ÌŠi”[—p
 
     private PlayerMove _playerMove = default;               //ƒvƒŒƒCƒ„[‚Ì‹““®ƒXƒNƒŠƒvƒg‚ÌŠi”[—p
 
@@ -23,11 +23,7 @@ public class ShotMove : MonoBehaviour
 
     private float _colliderRadius = default;                //“–‚½‚è”»’è‚Ì‘å‚«‚³‚ğŠi”[
 
-    private Vector2 _shooterPosition = default;             //Ëè‚ÌPositionŠi”[—p
-
-    private Vector2 _shotVector = default;                  //’e‚Ì”­ËƒxƒNƒgƒ‹Ši”[—p
-
-    private Vector2 _targetPosition = default;              //_target‚ÌPositionŠi”[—p
+    private float _shotAngle = default;                     //”­ËŠpŠi”[—p
 
     private int _shotCounter = default;                     //‚»‚Ì’e‚ğ”­Ë‚µ‚½”‚ğŠi”[‚·‚é(CharactorData‚©‚çó‚¯æ‚è)
 
@@ -37,9 +33,13 @@ public class ShotMove : MonoBehaviour
 
     private int _maxPelletCount = default;                  //“¯‚É¶¬‚·‚é’e‚Ì”‚ğŠi”[‚·‚é(CharactorData‚©‚çó‚¯æ‚è)
 
-    private float _shotAngle = default;                     //”­ËŠpŠi”[—p
-
     private bool _isVelocityChangePerShot = false;          //”­Ë‚²‚Æ‚É‰‘¬‚ğ‰ÁŒ¸‘¬‚·‚é‚©‚ğŠi”[‚·‚é
+
+    private Vector2 _shooterPosition = default;             //Ëè‚ÌPositionŠi”[—p
+
+    private Vector2 _shotVector = default;                  //’e‚Ì”­ËƒxƒNƒgƒ‹Ši”[—p
+
+    private Vector2 _targetPosition = default;              //_target‚ÌPositionŠi”[—p
 
     private const string PLAYER_TAG = "Player";             //ƒvƒŒƒCƒ„[‚Ìƒ^ƒO
 
@@ -107,10 +107,10 @@ public class ShotMove : MonoBehaviour
             //“G
 
             //Ëè‚ÌEnemyCharactorMove‚ğæ“¾
-            _charactorMove = _shooter.GetComponent<EnemyCharactorMove>();
+            _characterMove = _shooter.GetComponent<EnemyCharacterMove>();
 
             //”­Ë‚²‚Æ‚ÉŒ¸‘¬‚·‚é‚©‚ğæ“¾
-            _isVelocityChangePerShot = _charactorMove.GetIsDecelerationPerShot;
+            _isVelocityChangePerShot = _characterMove.GetIsChangeSpeedPerShot;
         }
         else
         {
@@ -120,7 +120,7 @@ public class ShotMove : MonoBehaviour
             _playerMove = _shooter.GetComponent<PlayerMove>();
 
             //”­Ë‚²‚Æ‚ÉŒ¸‘¬‚·‚é‚©‚ğæ“¾
-            _isVelocityChangePerShot = _playerMove.GetIsDecelerationPerShoot;
+            _isVelocityChangePerShot = _playerMove.GetIsChengeSpeedPerShot;
         }
     }
 
@@ -176,7 +176,7 @@ public class ShotMove : MonoBehaviour
             //2F–Ú‚ª‚ ‚é‚È‚ç
 
             //Œ»İ‰½”­–Ú‚Ì’e‚©‚ğæ“¾
-            _shotCounter = _charactorMove.GetCurrentShotCount;
+            _shotCounter = _characterMove.GetCurrentShotCount;
 
             //Šï‹ö”»’è
             if (_shotCounter % 2 == 1)
@@ -198,7 +198,6 @@ public class ShotMove : MonoBehaviour
         //¶¬‚²‚Æ‚É‰Á‘¬/Œ¸‘¬‚µ‚È‚¢’e‚È‚ç
         if (_shotMoveData._shotVelocity == ShotMoveData.ShotVelocity.Nomal)
         {
-            //I—¹
             return;
         }
 
@@ -209,31 +208,37 @@ public class ShotMove : MonoBehaviour
         {
             //ƒvƒŒƒCƒ„[‚Å‚Í‚È‚¢
 
+            //”­Ë‚²‚Æ‚ÉŒ¸‘¬‚·‚é‚©‚ğæ“¾
+            _isVelocityChangePerShot = _characterMove.GetIsChangeSpeedPerShot;
+
             //”­Ë‚²‚Æ‚É‰ÁŒ¸‘¬‚·‚é‚©?
             if (!_isVelocityChangePerShot)
             {
                 //‚µ‚È‚¢(¶¬‚²‚Æ‚É‰ÁŒ¸‘¬)
 
-                //_charactorMove‚©‚çŒ»İ‚Ì¶¬’e”‚ğó‚¯æ‚é
-                _pelletCounter = _charactorMove.GetCurrentPelletCount;
+                //_characterMove‚©‚çŒ»İ‚Ì¶¬’e”‚ğó‚¯æ‚é
+                _pelletCounter = _characterMove.GetCurrentPelletCount;
 
-                //_charactorMove‚©‚ç“¯¶¬’e”‚ğó‚¯æ‚é
-                _maxPelletCount = _charactorMove.GetMaxPelletCount;
+                //_characterMove‚©‚ç“¯¶¬’e”‚ğó‚¯æ‚é
+                _maxPelletCount = _characterMove.GetMaxPelletCount;
             }
             else
             {
                 //‚·‚é
 
-                //_charactorMove‚©‚çŒ»İ‚Ì¶¬’e”‚ğó‚¯æ‚é
-                _shotCounter = _charactorMove.GetCurrentShotCount;
+                //_characterMove‚©‚çŒ»İ‚Ì¶¬’e”‚ğó‚¯æ‚é
+                _shotCounter = _characterMove.GetCurrentShotCount;
 
-                //_charactorMove‚©‚çÅ‘å”­Ë’e”‚ğó‚¯æ‚é
-                _maxShotCount = _charactorMove.GetMaxShotCount;
+                //_characterMove‚©‚çÅ‘å”­Ë’e”‚ğó‚¯æ‚é
+                _maxShotCount = _characterMove.GetMaxShotCount;
             }
         }
         else
         {
             //ƒvƒŒƒCƒ„[‚Å‚ ‚é
+
+            //”­Ë‚²‚Æ‚ÉŒ¸‘¬‚·‚é‚©‚ğæ“¾
+            _isVelocityChangePerShot = _playerMove.GetIsChengeSpeedPerShot;
 
             //”­Ë‚²‚Æ‚É‰ÁŒ¸‘¬‚·‚é‚©?
             if (!_isVelocityChangePerShot)
@@ -257,6 +262,7 @@ public class ShotMove : MonoBehaviour
                 _maxShotCount = _playerMove.GetMaxShotCount;
             }
         }
+
     }
 
     /// <summary>
@@ -303,7 +309,7 @@ public class ShotMove : MonoBehaviour
             case ShotMoveData.ShotVelocity.FastToSlow:
 
 
-                //•úËó‚É”ò‚Ô’e‚©?
+                //”­Ë‚²‚Æ‚É‰ÁŒ¸‘¬‚·‚é’e‚©?
                 if (!_isVelocityChangePerShot)
                 {
                     //ˆá‚¤
@@ -316,7 +322,7 @@ public class ShotMove : MonoBehaviour
                 }
                 else
                 {
-                    //•úËó‚É”ò‚Ô’e
+                    //”­Ë‚²‚Æ‚É‰ÁŒ¸‘¬‚·‚é’e
 
                     //˜AË‚·‚é’e” + 1‚ğŠi”[
                     shotLength = _maxShotCount + 1;
@@ -341,7 +347,7 @@ public class ShotMove : MonoBehaviour
             case ShotMoveData.ShotVelocity.SlowToFast:
 
 
-                //•úËó‚É”ò‚Ô’e‚©?
+                //”­Ë‚²‚Æ‚É‰ÁŒ¸‘¬‚·‚é’e‚©?
                 if (!_isVelocityChangePerShot)
                 {
                     //ˆá‚¤
@@ -354,7 +360,7 @@ public class ShotMove : MonoBehaviour
                 }
                 else
                 {
-                    //•úËó‚É”ò‚Ô’e
+                    //”­Ë‚²‚Æ‚É‰ÁŒ¸‘¬‚·‚é’e
 
                     //˜AË‚·‚é’e” + 1‚ğŠi”[
                     shotLength = _maxShotCount + 1;

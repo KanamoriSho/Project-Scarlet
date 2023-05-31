@@ -12,25 +12,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 22d03fb3a5691594ca7395f5bd038811, type: 3}
   m_Name: PlayerReimuData
   m_EditorClassIdentifier: 
-  _charactorName: "\u970A\u5922"
-  _maxHp: 3
+  _characterName: "\u970A\u5922"
+  _maxHP: 3
   _shotSoundEffect: {fileID: 0}
   _hitSoundEffect: {fileID: 8300000, guid: ed5485186f783874b91c8275c24a8a74, type: 3}
   _speed: 5
   _shots:
   - {fileID: 5770338268384214004, guid: 35d517192af136347be6b73ef0d2f2fc, type: 3}
-  _shotCounts: 01000000
+  _shotCounts: 03000000
   _isTargetingEnemy: 00
   _colliderRadius: 0.1
   _afterHitInvincibleTime: 5
-  _xLimitOfMoving: 5
-  _yLimitOfMoving: 5
+  _bombCoolTime: 5
+  _xLimitOfMoving: 4.5
+  _yLimitOfMoving: 4.5
   _sprite: {fileID: 7606002375298022370, guid: a5ef836e935043d419c1a7268b2bb02d, type: 3}
   _shotPerSeconds: 0a000000
   _initiallyGeneratedShots: 200
   _verticalOffset: 0
   _horizontalOffset: 0
-  _shotPaterns: 00000000
-  _pelletCountInShots: 05000000
-  _formedAngles: 0f000000
-  _isDecelerationPerShoot: 
+  _shotPaterns: 02000000
+  _pelletCountInShots: 03000000
+  _multiShotFormedAngles: 0a000000
+  _isChangeSpeedPerShot: 00

@@ -78,7 +78,7 @@ public class ShotMoveData : ScriptableObject
     [EnumElements(typeof(ShotVelocity))]
     public ShotVelocity _shotVelocity;
 
-    [Label("¶¬‚Ì‰ÁŒ¸‘¬‹ï‡"), Range(0.1f, 2.0f)]
+    [Label("¶¬‚Ì‰ÁŒ¸‘¬‹ï‡"), Range(0.1f, 5.0f)]
     public float _shotVelocityRate = 1.5f;
 
     [Label("‰ÁŒ¸‘¬ƒJ[ƒu"), HideInInspector]

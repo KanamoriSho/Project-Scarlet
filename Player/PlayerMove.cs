@@ -12,37 +12,43 @@ public class PlayerMove : MonoBehaviour
     [SerializeField, Label("ボムエフェクトのオブジェクト")]
     private GameObject _bombShockWave = default;
 
-    private Transform _playerTransform = default;           //自身のTransform格納用
+    private Transform _playerTransform = default;                   //自身のTransform格納用
 
-    private Animator _animator = default;                   //自身のAnimtor格納用
+    private Animator _animator = default;                           //自身のAnimtor格納用
 
-    private AudioSource _audioSource = default;             //自身のAudioSource格納用
+    private AudioSource _audioSource = default;                     //自身のAudioSource格納用
 
-    private CollisionManager _collisionManger = default;    //自身のCollisionManager格納用
+    private CollisionManager _collisionManger = default;            //自身のCollisionManager格納用
 
-    private Animator _bombAnimator = default;               //ボムエフェクトのAnimator格納用
+    private Animator _bombAnimator = default;                       //ボムエフェクトのAnimator格納用
+    [SerializeField]
+    private int _currentHP = default;                               //現在のHP格納用
 
-    private int _currentShotNumber = 0;                     //現在の発射する弾の番号を格納する変数
+    private int _currentShotNumber = 0;                             //現在の発射する弾の番号を格納する変数
 
-    private int _currentShotCount = 0;                      //何回その弾を撃ったかを格納する変数
+    private int _currentShotCount = 0;                              //何回その弾を撃ったかを格納する変数
 
-    private int _maxShotCount = 0;                          //その弾を何発撃つかを格納する変数
+    private int _maxShotCount = 0;                                  //その弾を何発撃つかを格納する変数
 
-    private int _currentPelletCount = 0;                    //発射する弾の現在の生成数を格納する変数
+    private int _currentPelletCount = 0;                            //発射する弾の現在の生成数を格納する変数
 
-    private int _maxPelletCount = 0;                        //発射する弾の同時生成数を格納する変数
+    private int _maxPelletCount = 0;                                //発射する弾の同時生成数を格納する変数
 
-    private float _multiShotOffsetAngle = default;          //複数方向に発射する場合の発射角を格納する変数
+    private float _multiShotOffsetAngle = default;                  //複数方向に発射する場合の発射角を格納する変数
 
-    private float _offsetAngle = default;                   //複数方向に発射する場合の発射角を格納する変数
+    private float _offsetAngle = default;                           //複数方向に発射する場合の発射角を格納する変数
 
-    private bool _isShotInterval = false;                   //射撃インターバル中判定フラグ
+    private bool _isTalking = false;                                //会話中フラグ
+    [SerializeField]
+    private bool _isShotInterval = false;                           //射撃インターバル中判定フラグ
 
-    PlayerMoveData.ShotPatern _currentShotPatern = default; //弾の撃ち方を格納するEnum
+    private bool _isInvincible = false;                             //無敵フラグ
 
-    private bool _isInvincible = false;                     //無敵フラグ
+    private bool _isBombCoolTime = false;                           //ボム使用後クールタイム判定フラグ
 
-    private bool _isBombCoolTime = false;                   //ボム使用後クールタイム判定フラグ
+    private bool _isDead = false;                                   //死亡判定用フラグ
+
+    PlayerMoveData.ShotPatern _currentShotPatern = default;         //弾の撃ち方を格納するEnum
 
     private Vector2 _startPosition = new Vector2(0, -3);            //初期座標
 
@@ -82,9 +88,22 @@ public class PlayerMove : MonoBehaviour
         get { return _maxPelletCount; }
     }
 
-    public bool GetIsDecelerationPerShoot
+    public bool GetIsPlayerDead
     {
-        get { return _playerMoveData._isDecelerationPerShoot[_currentShotNumber]; }
+        //_isDead(死亡判定)を返す
+        get { return _isDead; }
+    }
+
+    public bool GetIsChengeSpeedPerShot
+    {
+        //現在の弾に付随する_isChangeSpeedPerShotを返す
+        get { return _playerMoveData._isChangeSpeedPerShot[_currentShotNumber]; }
+    }
+
+
+    public bool SetIsTalking
+    {
+        set { _isTalking = value; }
     }
 
     public bool GetIsInvincible
@@ -129,6 +148,9 @@ public class PlayerMove : MonoBehaviour
         //ボム用エフェクトを無効化
         _bombShockWave.SetActive(false);
 
+        //HPの設定
+        _currentHP = _playerMoveData._maxHP;
+
         //弾発射～発射間の待ち時間をキャッシュ
         _shotInterval = new WaitForSeconds(SECOND / (float)_playerMoveData._shotPerSeconds[_currentShotNumber]);
 
@@ -142,8 +164,8 @@ public class PlayerMove : MonoBehaviour
         _bombInterval = new WaitForSeconds(_playerMoveData._bombCoolTime);
 
         /*弾をプールに生成する
-         * _charactorMoveData._waves                   : ウェーブ数(ボスキャラ以外は1)
-         * _charactorMoveData._initiallyGeneratedShots : 初期生成弾数(スクリプタブルオブジェクトから受け取り)
+         * _characterMoveData._waves                   : ウェーブ数(ボスキャラ以外は1)
+         * _characterMoveData._initiallyGeneratedShots : 初期生成弾数(スクリプタブルオブジェクトから受け取り)
          */
 
         //使用弾の種類分ループ
@@ -163,6 +185,11 @@ public class PlayerMove : MonoBehaviour
 
     void Update()
     {
+        if(_isDead)
+        {
+            return;
+        }
+
         //X軸の入力値格納用
         float movingXInput = default;
 
@@ -246,7 +273,7 @@ public class PlayerMove : MonoBehaviour
         Move(movingXInput, movingYInput);
 
         //Z入力
-        if (Input.GetKey(KeyCode.Z))
+        if (Input.GetKey(KeyCode.Z) && !_isTalking)
         {
             //弾発射処理
             Shot();
@@ -347,6 +374,8 @@ public class PlayerMove : MonoBehaviour
                 //弾の散布角を取得
                 float formedAngle = _playerMoveData._multiShotFormedAngles[_currentShotNumber];
 
+                Debug.Log("formedAngle :" + formedAngle);
+
                 //一度に生成する弾数分回るループ
                 for (int pelletCount = 0; pelletCount < _maxPelletCount; pelletCount++)
                 {
@@ -427,10 +456,7 @@ public class PlayerMove : MonoBehaviour
         _currentPelletCount = 0;
 
         //インターバル処理
-        RateOfShot();
-
-        //撃った弾数を加算
-        _currentShotCount++;
+        StartCoroutine(RateOfShot());
 
     }
 
@@ -518,7 +544,7 @@ public class PlayerMove : MonoBehaviour
 
         float radian = Mathf.Atan2(degree.y, degree.x);
 
-        shot.GetComponent<ShotMove>().GetSetShotAngle = radian * Mathf.Rad2Deg + _offsetAngle;
+        shot.GetComponent<ShotMove>().GetSetShotAngle = radian * Mathf.Rad2Deg + _offsetAngle + _multiShotOffsetAngle;
     }
 
     /// <summary>
@@ -603,13 +629,13 @@ public class PlayerMove : MonoBehaviour
 
         GameObject[] enemyShotsInPicture = GameObject.FindGameObjectsWithTag("EnemyShot");      //現在有効化されている敵の弾を全て取得
 
+        StartCoroutine(BombCoolTime());
+
         //先ほど取得した敵の弾の数だけループする
         for(int shotCount = 0; shotCount < enemyShotsInPicture.Length; shotCount++)
         {
             enemyShotsInPicture[shotCount].GetComponent<Animator>().SetTrigger("Disable");      //Animatorの「無効化」トリガーをオンに
         }
-
-        StartCoroutine(BombCoolTime());
     }
 
     IEnumerator BombCoolTime()
@@ -629,13 +655,18 @@ public class PlayerMove : MonoBehaviour
     {
         _isInvincible = true;
 
+        _currentHP--;
+
+        if(_currentHP <= 0)
+        {
+            _isDead = true;
+        }
+
         _audioSource.PlayOneShot(_playerMoveData._hitSoundEffect);
 
         _animator.SetTrigger("Hit");
 
         StartCoroutine(Bomb());
-
-        StartCoroutine(Interval(_invincibleTime));
 
         yield return _invincibleTime;
 
